@@ -1,0 +1,174 @@
+.TH CONTROLCENTER 1 "2026-03-05" "1.0.0" "Control Center Manual"
+.SH NAME
+controlcenter \- aggregate and display web pages in a configurable GUI grid
+.SH SYNOPSIS
+.B controlcenter
+[\fB\-\-config\fR \fIPATH\fR]
+[\fB\-\-version\fR]
+[\fB\-h\fR]
+.SH DESCRIPTION
+.B controlcenter
+is a PyQt6-based desktop application that loads a set of web pages and
+displays them in a resizable, user-configurable grid.  A row of large
+coloured status indicators is shown at the top of the window, and an
+embedded TCP server accepts JSON commands that change indicator states
+or display messages.
+.PP
+The application is configured via a YAML file (default:
+\fIconfig/controlcenter.yaml\fR relative to the project root).
+.SH OPTIONS
+.TP
+.BI \-\-config\  PATH
+Path to the YAML configuration file.
+Default: \fI<project-root>/config/controlcenter.yaml\fR
+.TP
+.B \-\-version
+Print the version string and exit.
+.TP
+.BR \-h ", " \-\-help
+Print a short help message and exit.
+.SH CONFIGURATION FILE
+The configuration file is a YAML document with the following top-level keys.
+.SS title
+String.  The window title.  Default: \fI"Control Center"\fR.
+.SS grid
+Mapping with optional keys \fBrows\fR and \fBcols\fR (integers, 1–8).
+Sets the initial grid dimensions.
+.nf
+grid:
+  rows: 2
+  cols: 2
+.fi
+.SS status_indicators
+A list of indicator definitions.  Each entry has:
+.RS
+.TP
+.B name
+Display name of the indicator (string).
+.TP
+.B state
+Initial state: \fBok\fR, \fBwarning\fR, \fBerror\fR, or \fBunknown\fR.
+.RE
+.nf
+status_indicators:
+  - name: DAQ
+    state: unknown
+  - name: Trigger
+    state: ok
+.fi
+.SS pages
+A list of page definitions.  Each entry has:
+.RS
+.TP
+.B name
+Display name shown in the cell title bar (string).
+.TP
+.B url
+The URL to load in the embedded browser (string).
+.TP
+.B position
+Optional \fI[row, col]\fR list (zero-indexed).  Pages without a position
+are placed left-to-right, top-to-bottom after explicitly placed pages.
+.RE
+.nf
+pages:
+  - name: Grafana
+    url: http://localhost:3000
+    position: [0, 0]
+  - name: Logbook
+    url: http://localhost:8081
+    position: [1, 0]
+.fi
+.SS status_server
+Mapping that configures the embedded TCP command server:
+.RS
+.TP
+.B host
+Bind address.  Use \fI"127.0.0.1"\fR for IPv4 loopback,
+\fI"::1"\fR for IPv6 loopback, \fI""\fR or \fI"::"\fR to
+listen on all interfaces (IPv6 dual-stack).  Default: \fI"127.0.0.1"\fR.
+.TP
+.B port
+TCP port.  Default: \fI9876\fR.
+.RE
+.nf
+status_server:
+  host: "127.0.0.1"
+  port: 9876
+.fi
+.SH GUI USAGE
+.SS Status Indicators
+The large coloured tiles at the top of the window reflect the state of
+named system components.  Colours:
+.RS
+.TP
+.B Green
+OK
+.TP
+.B Amber
+Warning
+.TP
+.B Red
+Error
+.TP
+.B Grey
+Unknown / not yet set
+.RE
+Clicking an indicator has no action by default; use \fBcontrolcenter\-send\fR(1)
+to change states programmatically.
+.SS Grid Controls
+A toolbar below the status bar provides \fBRows\fR and \fBCols\fR spinners.
+Adjust the values and click \fBApply\fR to resize the grid.  Existing page
+assignments are preserved (left-to-right, top-to-bottom); new cells show
+a blank page.
+.SS Rearranging Pages
+Left-click and drag a cell onto another cell to swap their page assignments.
+Right-click a cell to:
+.RS
+.IP \(bu 4
+\fBReload\fR — reload the embedded page.
+.IP \(bu 4
+\fBSet URL...\fR — navigate to a different URL.
+.IP \(bu 4
+\fBRename...\fR — change the cell's display name.
+.IP \(bu 4
+\fBClear (blank)\fR — navigate the cell to \fIabout:blank\fR.
+.RE
+.SS Saving the Layout
+\fBFile \(-> Save Layout\fR writes the current grid dimensions and page
+assignments back into the configuration YAML file, so they persist across
+restarts.
+.SH STATUS COMMAND PROTOCOL
+The embedded server accepts newline-delimited JSON objects over TCP.
+Each object must have a \fBcommand\fR key.  The server replies with a
+newline-delimited JSON object.
+.PP
+See \fBcontrolcenter\-send\fR(1) for a convenient command-line client,
+and the project documentation in \fIdoc/\fR for raw protocol details.
+.SH EXAMPLES
+Start with the default configuration:
+.PP
+.nf
+  cd /path/to/mu2edaq-controlcenter
+  ./venv/bin/python src/controlcenter.py
+.fi
+.PP
+Start with a custom configuration file:
+.PP
+.nf
+  ./venv/bin/python src/controlcenter.py --config /etc/cc/mysite.yaml
+.fi
+.SH FILES
+.TP
+.I config/controlcenter.yaml
+Default configuration file.
+.TP
+.I src/controlcenter.py
+Main entry point.
+.TP
+.I src/controlcenter_send.py
+Command-line status client.
+.SH SEE ALSO
+.BR controlcenter-send (1)
+.SH AUTHORS
+Mu2e DAQ Group.

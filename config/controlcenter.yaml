@@ -1,0 +1,48 @@
+# Control Center Configuration File
+
+# Window title
+title: "Mu2e DAQ Control Center"
+
+# Grid layout: initial rows and columns
+grid:
+  rows: 2
+  cols: 2
+
+# Status indicators displayed at the top of the window.
+# Each indicator has a name and an initial state.
+# Valid states: ok, warning, error, unknown
+status_indicators:
+  - name: "DAQ"
+    state: unknown
+  - name: "Trigger"
+    state: unknown
+  - name: "Misc"
+    state: unknown
+  - name: "Storage"
+    state: unknown
+
+# Pages to display in the grid.
+# Each page has a name, a URL, and an optional starting grid position [row, col].
+# Positions are zero-indexed. If position is omitted, pages fill left-to-right, top-to-bottom.
+pages:
+  - name: "Dashboard"
+    url: "http://localhost:5001"
+    position: [0, 0]
+  - name: "Disk Watcher"
+    url: "http://localhost:5002"
+    position: [0, 1]
+  - name: "Heart Beats"
+    url: "http://localhost:5003"
+    position: [1, 0]
+  - name: "FTS"
+    url: "http://localhost:8080"
+    position: [1, 1]
+
+# Status command server settings.
+# The server listens for incoming JSON status commands.
+# Supports both IPv4 and IPv6 addresses.
+# Use "127.0.0.1" for IPv4 loopback, "::1" for IPv6 loopback,
+# or "" / "::" to listen on all interfaces (IPv6 dual-stack).
+status_server:
+  host: "127.0.0.1"
+  port: 9876

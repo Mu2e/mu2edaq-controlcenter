@@ -1,0 +1,118 @@
+.TH CONTROLCENTER-SEND 1 "2026-03-05" "1.0.0" "Control Center Manual"
+.SH NAME
+controlcenter\-send \- send status commands to a running Control Center instance
+.SH SYNOPSIS
+.B controlcenter\-send
+[\fB\-\-host\fR \fIHOST\fR]
+[\fB\-\-port\fR \fIPORT\fR]
+[\fB\-\-timeout\fR \fISECS\fR]
+\fICOMMAND\fR
+[\fIARGS\fR ...]
+.SH DESCRIPTION
+.B controlcenter\-send
+is a command-line tool that connects to the TCP status server embedded
+in a running \fBcontrolcenter\fR(1) instance and sends a single JSON command.
+The server's JSON reply is printed to standard output.
+.PP
+Both IPv4 and IPv6 addresses are supported; the correct socket family is
+selected automatically via \fBgetaddrinfo\fR(3).
+.SH OPTIONS
+.TP
+.BI \-\-host\  HOST
+Hostname or IP address of the running Control Center.
+Default: \fI127.0.0.1\fR.
+Use \fI::1\fR for the IPv6 loopback address.
+.TP
+.BI \-\-port\  PORT
+TCP port.  Must match the \fBstatus_server.port\fR value in the
+Control Center configuration.  Default: \fI9876\fR.
+.TP
+.BI \-\-timeout\  SECS
+Connection and receive timeout in seconds.  Default: \fI5.0\fR.
+.SH COMMANDS
+.TP
+.BI set-status\  INDICATOR\  STATE\  [MESSAGE]
+Set the state of a named status indicator.
+.RS
+.TP
+.I INDICATOR
+The name of the indicator as defined in the configuration file (case-sensitive).
+.TP
+.I STATE
+One of: \fBok\fR, \fBwarning\fR, \fBerror\fR, \fBunknown\fR.
+.TP
+.I MESSAGE
+Optional human-readable message displayed inside the indicator tile.
+Multiple words are joined with spaces.
+.RE
+.TP
+.BI set-message\  LEVEL\  TEXT
+Display a message banner below the status indicators.
+.RS
+.TP
+.I LEVEL
+One of: \fBinfo\fR, \fBwarning\fR, \fBerror\fR.
+.TP
+.I TEXT
+The message text.  Multiple words are joined with spaces.
+.RE
+.TP
+.B clear-message
+Clear the message banner.
+.TP
+.B reload-all
+Reload all embedded web pages in the grid.
+.TP
+.B get-status
+Print the current state of every status indicator as a JSON object.
+.TP
+.B ping
+Test connectivity.  The server replies with \fI{"status": "pong"}\fR.
+.SH EXIT STATUS
+.TP
+.B 0
+Command was accepted and the server returned a successful status.
+.TP
+.B 1
+A connection error occurred, or the server returned an error status.
+.SH EXAMPLES
+Set the DAQ indicator to OK:
+.PP
+.nf
+  controlcenter-send set-status DAQ ok "All systems nominal"
+.fi
+.PP
+Set the Trigger indicator to warning with a message:
+.PP
+.nf
+  controlcenter-send set-status Trigger warning "High occupancy detected"
+.fi
+.PP
+Display an error banner:
+.PP
+.nf
+  controlcenter-send set-message error "Run aborted by operator"
+.fi
+.PP
+Clear the message banner:
+.PP
+.nf
+  controlcenter-send clear-message
+.fi
+.PP
+Query current indicator states:
+.PP
+.nf
+  controlcenter-send get-status
+.fi
+.PP
+Connect to a Control Center on a remote host via IPv6:
+.PP
+.nf
+  controlcenter-send --host ::1 --port 9876 ping
+  controlcenter-send --host 2001:db8::1 --port 9876 set-status HLT error
+.fi
+.SH SEE ALSO
+.BR controlcenter (1)
+.SH AUTHORS
+Mu2e DAQ Group.
