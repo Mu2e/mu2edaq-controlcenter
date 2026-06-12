@@ -85,12 +85,26 @@ class MainWindow(QMainWindow):
 
         # Start status command server
         srv_cfg = cfg.get("status_server", {})
+        srv_port = int(os.environ.get("CRS_PORT_CMD",
+                                      srv_cfg.get("port", 9876)))
         self._server = StatusServer(
             host=srv_cfg.get("host", "127.0.0.1"),
-            port=int(srv_cfg.get("port", 9876)),
+            port=srv_port,
             command_callback=self._handle_command,
         )
         self._server.start()
+
+        # Announce via mu2edaq-discovery once the command server is up.
+        # Optional dependency: the app runs normally without it.
+        self._responder = None
+        try:
+            from mu2edaq_discovery import Responder
+            self._responder = Responder(
+                name="DAQ Control Center", app="controlcenter",
+                port=srv_port, scheme="tcp")
+            self._responder.start()
+        except ImportError:
+            pass
 
     # -------------------------------------------------------------------------
     # Toolbar
@@ -393,5 +407,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         self._clock_timer.stop()
+        if self._responder is not None:
+            self._responder.stop()
         self._server.stop()
         super().closeEvent(event)
