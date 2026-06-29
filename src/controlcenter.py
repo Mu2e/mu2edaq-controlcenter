@@ -91,7 +91,24 @@ def main(argv=None) -> int:
     window = MainWindow(cfg, config_path=args.config)
     window.show()
 
-    return app.exec()
+    # Mu2e DAQ service discovery: advertise the status-server TCP port so the
+    # app appears in mu2edaq-discover scans and the control room browser. The
+    # status server is started by MainWindow above. Best-effort so a missing
+    # package never blocks startup.
+    responder = None
+    try:
+        from mu2edaq_discovery import Responder
+        responder = Responder(name="DAQ Control Center", app="controlcenter",
+                              port=cfg["status_server"]["port"], scheme="tcp")
+        responder.start()
+    except Exception as exc:
+        print(f"[Discovery] responder not started: {exc}")
+
+    try:
+        return app.exec()
+    finally:
+        if responder is not None:
+            responder.stop()
 
 
 if __name__ == "__main__":
