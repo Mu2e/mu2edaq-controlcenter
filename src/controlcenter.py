@@ -82,6 +82,12 @@ def main(argv=None) -> int:
         msg.exec()
         return 1
 
+    # Control-room port override: CRS_PORT_CMD (exported by crs-app from
+    # apps.yaml) takes precedence over status_server.port in the config file.
+    _crs_cmd = os.environ.get("CRS_PORT_CMD")
+    if _crs_cmd:
+        cfg["status_server"]["port"] = int(_crs_cmd)
+
     window = MainWindow(cfg, config_path=args.config)
     window.show()
 
