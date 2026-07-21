@@ -13,12 +13,12 @@ pages:
   - 0
   - 1
 - name: Heart Beats
-  url: http://localhost:5003
+  url: http://localhost:8081
   position:
   - 1
   - 0
 - name: FTS
-  url: http://localhost:8080
+  url: http://localhost:5003
   position:
   - 1
   - 1
