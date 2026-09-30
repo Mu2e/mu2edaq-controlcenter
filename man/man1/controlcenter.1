@@ -1,4 +1,4 @@
-.TH CONTROLCENTER 1 "2026-03-05" "1.0.0" "Control Center Manual"
+.TH CONTROLCENTER 1 "2026-09-30" "mu2edaq-controlcenter 1.0.0" "Mu2e DAQ Manual"
 .SH NAME
 controlcenter \- aggregate and display web pages in a configurable GUI grid
 .SH SYNOPSIS
@@ -32,7 +32,7 @@ The configuration file is a YAML document with the following top-level keys.
 .SS title
 String.  The window title.  Default: \fI"Control Center"\fR.
 .SS grid
-Mapping with optional keys \fBrows\fR and \fBcols\fR (integers, 1–8).
+Mapping with optional keys \fBrows\fR and \fBcols\fR (integers, 1\(en8).
 Sets the initial grid dimensions.
 .nf
 grid:
@@ -126,13 +126,13 @@ Left-click and drag a cell onto another cell to swap their page assignments.
 Right-click a cell to:
 .RS
 .IP \(bu 4
-\fBReload\fR — reload the embedded page.
+\fBReload\fR \(em reload the embedded page.
 .IP \(bu 4
-\fBSet URL...\fR — navigate to a different URL.
+\fBSet URL...\fR \(em navigate to a different URL.
 .IP \(bu 4
-\fBRename...\fR — change the cell's display name.
+\fBRename...\fR \(em change the cell's display name.
 .IP \(bu 4
-\fBClear (blank)\fR — navigate the cell to \fIabout:blank\fR.
+\fBClear (blank)\fR \(em navigate the cell to \fIabout:blank\fR.
 .RE
 .SS Saving the Layout
 \fBFile \(-> Save Layout\fR writes the current grid dimensions and page
@@ -168,7 +168,51 @@ Main entry point.
 .TP
 .I src/controlcenter_send.py
 Command-line status client.
+.TP
+.I controlcenter.pid
+PID file written by
+.BR start-mu2edaq-controlcenter.sh (1).
+.SH ENVIRONMENT
+.TP
+.B CRS_PORT_CMD
+Status-server TCP port.  Exported by
+.BR crs-app (1)
+and by
+.BR mu2edaq-app (1)
+from the
+.B cmd
+port in
+.IR apps.yaml .
+When set and non-empty it overrides
+.B status_server.port
+from the configuration file
+.RI ( src/controlcenter.py :87).
+It does not override
+.BR status_server.host ,
+which stays 127.0.0.1 unless the config file says otherwise.
+.TP
+.B QT_QUICK_BACKEND ", " QTWEBENGINE_CHROMIUM_FLAGS
+Set to
+.B software
+and
+.B "\-\-disable\-gpu \-\-enable\-unsafe\-swiftshader"
+respectively by the start script when no usable OpenGL context is found.
+.SH EXIT STATUS
+.TP
+.B 0
+The GUI ran and exited normally.
+.TP
+.B 1
+The configuration file was missing or could not be parsed; the error is
+also shown in a modal dialog.
+.PP
+Any other value is the Qt event loop's return code.
 .SH SEE ALSO
-.BR controlcenter-send (1)
+.BR controlcenter-send (1),
+.BR start-mu2edaq-controlcenter.sh (1),
+.BR stop-mu2edaq-controlcenter.sh (1),
+.BR controlcenter-protocol (7),
+.BR crs-app (1),
+.BR mu2edaq-app (1)
 .SH AUTHORS
 Mu2e DAQ Group.

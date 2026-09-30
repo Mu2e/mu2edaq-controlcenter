@@ -1,0 +1,157 @@
+.TH CONTROLCENTER\-PROTOCOL 7 "2026-09-30" "mu2edaq-controlcenter 1.0.0" "Mu2e DAQ Manual"
+.SH NAME
+controlcenter-protocol \- newline-delimited JSON status protocol of the Control Center
+.SH SYNOPSIS
+.nf
+TCP 127.0.0.1:9876   (default; \fBCRS_PORT_CMD\fR or \fBstatus_server.port\fR)
+request:   <json-object> "\en"
+response:  <json-object> "\en"
+.fi
+.SH DESCRIPTION
+.BR controlcenter (1)
+runs a TCP server on a daemon thread
+.RI ( src/status_server.py ).
+Each request is one JSON object on one line; each response is one JSON
+object on one line.  A connection may carry many request/response pairs
+and is closed by the client.
+.PP
+This is the only programmatic interface the package exposes.  It is how
+other DAQ components push state into the control-room wall display:
+the Control Center never polls them, so every indicator is driven by
+whatever process chooses to send
+.BR set_status .
+.SS Wire format
+The server buffers until it sees a newline, then decodes one object
+.RI ( status_server.py :108-114).
+Input that is not valid UTF-8 JSON gets
+.PP
+.nf
+  {"status": "error", "message": "Invalid JSON: <detail>"}
+.fi
+.PP
+and the connection stays open.  A client that never sends a newline is
+disconnected after the 30-second read timeout.
+.PP
+Note the asymmetry between the wire and the CLI: commands on the wire
+use underscores
+.RB ( set_status ),
+while
+.BR controlcenter-send (1)
+takes hyphens
+.RB ( set-status )
+and translates.  Hand-written clients must use the underscore form.
+.SS Commands
+.TP
+.B {"command": "ping"}
+Answered
+.B {"status": "pong"}
+directly by the server thread, without involving the GUI
+.RI ( status_server.py :120).
+It therefore proves the socket and the thread are alive but does
+.I not
+prove the Qt event loop is still running; a wedged GUI still answers
+.BR ping .
+.TP
+.B {"command": "set_status", "indicator": \fIname\fB, "state": \fIstate\fB, "message": \fItext\fB}
+Set one named indicator.
+.I state
+is one of
+.BR ok ", " warning ", " error ", " unknown .
+.I message
+is optional.
+.I name
+must match an indicator declared in
+.B status_indicators
+in the config file; an unknown name is accepted with
+.B {"status": "ok"}
+but updates nothing, because the call is dispatched to the GUI thread
+asynchronously and its result is never collected
+.RI ( main_window.py :316-328).
+An invalid
+.I state
+is coerced to
+.B unknown
+by the widget rather than rejected.
+.TP
+.B {"command": "set_message", "level": \fIlevel\fB, "text": \fItext\fB}
+Show the banner.
+.I level
+is
+.BR info ", " warning ", or " error .
+.TP
+.B {"command": "clear_message"}
+Clear the banner.
+.TP
+.B {"command": "reload_all"}
+Reload every embedded page.  Used after a dashboard behind one of the
+cells has been restarted.
+.TP
+.B {"command": "get_status"}
+Return every indicator and its current state:
+.PP
+.nf
+  {"status": "ok", "indicators": {"DAQ": "ok", "Trigger": "warning"}}
+.fi
+.PP
+This is the only command that reads GUI state synchronously from the
+server thread rather than posting to the GUI thread.
+.SS Responses
+.TP
+.B {"status": "ok"}
+Accepted.  For the four mutating commands this means "queued for the
+GUI thread", not "applied".
+.TP
+.B {"status": "pong"}
+Reply to
+.BR ping .
+.TP
+.B {"status": "error", "message": \fItext\fB}
+Malformed JSON, an unknown command, or an exception raised by the
+handler.
+.SH SECURITY
+There is no authentication, no authorization and no transport
+security.  Any process that can open the port can change what the
+control room sees, including clearing an error banner.
+.PP
+The shipped default binds 127.0.0.1
+.RI ( config/controlcenter.yaml :47),
+which limits that to local processes.  The bind address is
+configurable, and setting
+.B status_server.host
+to
+.BR "" ", " :: ,
+or a routable address exposes the port to the network with no
+counter-measure.
+.B CRS_PORT_CMD
+overrides only the port, never the host, so the control-room launch
+path cannot accidentally widen the bind.
+.SH EXAMPLES
+With the shipped client:
+.PP
+.nf
+  controlcenter-send set-status DAQ ok "All systems nominal"
+  controlcenter-send get-status
+.fi
+.PP
+Raw, with
+.BR nc (1)
+\(em note the underscore:
+.PP
+.nf
+  printf '{"command":"set_status","indicator":"DAQ","state":"error"}\en' \e
+      | nc 127.0.0.1 9876
+.fi
+.PP
+From Python:
+.PP
+.nf
+  import json, socket
+  s = socket.create_connection(("127.0.0.1", 9876), timeout=5)
+  s.sendall(json.dumps({"command": "get_status"}).encode() + b"\en")
+  print(s.makefile().readline())
+.fi
+.SH SEE ALSO
+.BR controlcenter (1),
+.BR controlcenter-send (1)
+.SH AUTHOR
+Mu2e DAQ Group.

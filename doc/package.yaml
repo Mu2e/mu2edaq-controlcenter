@@ -1,0 +1,134 @@
+schema: mega-review/1
+package: mu2edaq-controlcenter
+tier: A
+group: control-room
+repo:
+  url: git@github.com:Mu2e/mu2edaq-controlcenter.git
+  exists: true
+  issues_enabled: true
+doc_dir: doc
+summary: >
+  PyQt6 kiosk that tiles the other DAQ packages' web dashboards into a
+  resizable grid and exposes a TCP JSON status protocol so external
+  processes can drive its indicator bar and message banner
+languages: [python]
+loc: 2350
+
+runtime:
+  executables:
+    - name: controlcenter
+      kind: gui
+      man_page: man/man1/controlcenter.1
+    - name: controlcenter-send
+      kind: cli
+      man_page: man/man1/controlcenter-send.1
+    - name: start-mu2edaq-controlcenter.sh
+      kind: script
+      man_page: man/man1/start-mu2edaq-controlcenter.sh.1
+    - name: stop-mu2edaq-controlcenter.sh
+      kind: script
+      man_page: man/man1/stop-mu2edaq-controlcenter.sh.1
+    - name: start.sh
+      kind: script
+      waiver: >
+        symlink to start-mu2edaq-controlcenter.sh (verified with ls -l and
+        cmp); documented in that page as the deprecated compatibility name
+    - name: stop.sh
+      kind: script
+      waiver: >
+        symlink to stop-mu2edaq-controlcenter.sh (verified with ls -l and
+        cmp); documented in that page as the deprecated compatibility name
+    - name: bootstrap.sh
+      kind: script
+      waiver: >
+        one-shot venv creation, no options; covered by README.md and by the
+        start page's failure path
+  services: []
+  ports:
+    - {port: 9876, proto: tcp, role: status-command-server, source: "config/controlcenter.yaml:48"}
+  config_files: [config/controlcenter.yaml]
+  env_vars: [CRS_PORT_CMD, QT_QUICK_BACKEND, QTWEBENGINE_CHROMIUM_FLAGS]
+
+interactions:
+  depends_on:
+    - package: mu2edaq-dashboard
+      via: http
+      direction: out
+      evidence: "config/controlcenter.yaml:29"
+    - package: mu2edaq-diskwatcher
+      via: http
+      direction: out
+      evidence: "config/controlcenter.yaml:32"
+    - package: mu2edaq-heartbeatmonitor
+      via: http
+      direction: out
+      evidence: "config/controlcenter.yaml:35"
+    - package: mu2edaq-fts
+      via: http
+      direction: out
+      evidence: "config/controlcenter.yaml:38"
+    - package: mu2edaq-discovery
+      via: import
+      direction: out
+      evidence: "src/controlcenter.py:98"
+  depended_on_by: []
+  external: []
+
+quality:
+  tests: {present: false, framework: none, count: 0}
+  ci: {present: false, workflows: []}
+  license: MIT
+  artifacts_clean: true
+
+findings:
+  - id: CC-001
+    severity: S3
+    type: documentation
+    title: "[config] embedded dashboard URLs duplicate apps.yaml ports with no cross-check"
+    issue: pending
+    fingerprint: b871bc21
+  - id: CC-002
+    severity: S3
+    type: enhancement
+    title: "[tests] no test suite for a package that ships a network-facing protocol"
+    issue: pending
+    fingerprint: bad2b1c4
+  - id: CC-003
+    severity: S3
+    type: enhancement
+    title: "[ci] no CI workflow"
+    issue: pending
+    fingerprint: c653e4f3
+  - id: CC-004
+    severity: S4
+    type: documentation
+    title: "[docs] doc/ is an empty committed directory"
+    issue: pending
+    fingerprint: 269c8114
+  - id: CC-005
+    severity: S4
+    type: documentation
+    title: "[man] pages were in a flat man/ with non-conforming .TH lines"
+    issue: pending
+    fingerprint: 217e1922
+  - id: CC-006
+    severity: S4
+    type: documentation
+    title: "[docs] CLAUDE.md claims layout is persisted on exit; closeEvent does not save"
+    issue: pending
+    fingerprint: 75ba5b65
+
+notes:
+  dedup: >
+    gh issue list -R Mu2e/mu2edaq-controlcenter --state all returned 2 issues,
+    both CLOSED (#1 start/stop rename, #2 discovery support) and both already
+    implemented in the tree. No fingerprint or title-token overlap with the
+    findings above; nothing to comment on.
+  issue_filing: >
+    Issue filing was blocked for this review wave. All findings are staged in
+    doc/ISSUES-PENDING.md in the section 6 body format with fingerprints.
+  man_layout: >
+    man/controlcenter.1 and man/controlcenter-send.1 were git mv'd into
+    man/man1/. A repo-wide grep found the only references to the old flat
+    paths were two lines in README.md, which were updated in the same commit.
+    No test, CMake rule or install script referenced man/ at all.

@@ -1,0 +1,121 @@
+.TH START\-MU2EDAQ\-CONTROLCENTER.SH 1 "2026-09-30" "mu2edaq-controlcenter 1.0.0" "Mu2e DAQ Manual"
+.SH NAME
+start-mu2edaq-controlcenter.sh \- start the Mu2e DAQ Control Center kiosk
+.SH SYNOPSIS
+.B start-mu2edaq-controlcenter.sh
+.PP
+.B start.sh
+.SH DESCRIPTION
+Standardized Mu2e control-room start script for
+.BR controlcenter (1).
+It activates the package virtual environment, probes for a usable
+OpenGL context, launches the GUI in the background, waits for the TCP
+status server to accept connections, and then sends one
+.B ping
+per configured status indicator as a health check.
+.PP
+.B start.sh
+is a symbolic link to this script, kept for one release after the
+rename; both names run identical code.
+.B start.sh
+is the historical name and
+.B start-mu2edaq-controlcenter.sh
+is canonical \(em it is the name recorded in
+.I apps.yaml
+and the name symlinked into the shared
+.I ~/controlroom/bin
+area, where the unqualified
+.I start.sh
+would collide with every other DAQ package.
+.PP
+The script takes no options; all behaviour is controlled by the
+environment and by
+.IR config/controlcenter.yaml .
+.SS Startup sequence
+.TP
+.B 1. Virtual environment
+Aborts if
+.I venv/bin/python
+is missing or not executable, directing the operator to
+.IR bootstrap.sh .
+.TP
+.B 2. GPU probe
+.B QWebEngineView
+is Chromium and needs a working GLX context.  A failure can be delayed
+well past startup, so the script creates a minimal offscreen
+.B QOpenGLContext
+in a separate 10-second process first.  If that fails it exports
+.B QT_QUICK_BACKEND=software
+and
+.B QTWEBENGINE_CHROMIUM_FLAGS
+to force software rendering rather than let the app abort later.
+.TP
+.B 3. Launch
+Runs
+.I src/controlcenter.py
+with the bundled config, backgrounds it, and writes the PID to
+.IR controlcenter.pid .
+.TP
+.B 4. Readiness wait
+Polls a TCP connect to 127.0.0.1:$CRS_PORT_CMD once a second for up to
+15 seconds, failing early if the process dies.  On timeout it kills the
+process and exits non-zero, so a hung start never leaves a half-running
+kiosk.
+.TP
+.B 5. Indicator ping
+Sends
+.B controlcenter-send ping
+once per indicator in the hard-coded list
+.BR DAQ ", " Trigger ", " Misc ", " Storage .
+.SH OPTIONS
+None.  The script parses no arguments and ignores any given.
+.SH FILES
+.TP
+.I venv/bin/python
+Interpreter; must exist before the script will run.
+.TP
+.I config/controlcenter.yaml
+Configuration passed to the application with \fB\-\-config\fR.
+.TP
+.I controlcenter.pid
+PID of the launched GUI, consumed by
+.BR stop-mu2edaq-controlcenter.sh (1).
+.SH ENVIRONMENT
+.TP
+.B CRS_PORT_CMD
+Status-server port.  Exported by
+.BR crs-app (1)
+or
+.BR mu2edaq-app (1)
+from
+.IR apps.yaml ;
+defaults to 9876 when unset.  The script re-exports it so the
+application inherits it, and uses it as the port to wait on.
+.SH EXIT STATUS
+.TP
+.B 0
+The GUI started and its status server accepted a connection.
+.TP
+.B 1
+The virtual environment was missing, the process died during startup, or
+the status server did not come up within 15 seconds.
+.SH EXAMPLES
+Start with the default port:
+.PP
+.nf
+  ./start-mu2edaq-controlcenter.sh
+.fi
+.PP
+Start under the control-room port assignment:
+.PP
+.nf
+  crs-app start controlcenter
+.fi
+.SH SEE ALSO
+.BR controlcenter (1),
+.BR stop-mu2edaq-controlcenter.sh (1),
+.BR controlcenter-send (1),
+.BR crs-app (1),
+.BR mu2edaq-app (1)
+.SH AUTHOR
+Mu2e DAQ Group.
