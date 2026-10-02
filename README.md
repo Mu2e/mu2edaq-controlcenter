@@ -152,6 +152,9 @@ mu2edaq-controlcenter/
 ## Man Pages
 
 ```bash
-man man/controlcenter.1
-man man/controlcenter-send.1
+man man/man1/controlcenter.1
+man man/man1/controlcenter-send.1
+
+# or, with the package man directory on MANPATH
+MANPATH="$PWD/man:$MANPATH" man controlcenter
 ```

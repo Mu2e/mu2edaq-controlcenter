@@ -1,0 +1,70 @@
+.TH STOP\-MU2EDAQ\-CONTROLCENTER.SH 1 "2026-09-30" "mu2edaq-controlcenter 1.0.0" "Mu2e DAQ Manual"
+.SH NAME
+stop-mu2edaq-controlcenter.sh \- stop the Mu2e DAQ Control Center kiosk
+.SH SYNOPSIS
+.B stop-mu2edaq-controlcenter.sh
+.PP
+.B stop.sh
+.SH DESCRIPTION
+Standardized Mu2e control-room stop script for
+.BR controlcenter (1).
+It resolves the running process, sends
+.BR SIGTERM ,
+waits up to 10 seconds for a clean exit, escalates to
+.B SIGKILL
+if the process is still alive, and removes the PID file.
+.PP
+.B stop.sh
+is a symbolic link to this script;
+.B stop-mu2edaq-controlcenter.sh
+is the canonical name, for the same collision reason described in
+.BR start-mu2edaq-controlcenter.sh (1).
+.SS PID resolution
+The PID is read from
+.I controlcenter.pid
+when that file exists.  When it does not, the script falls back to
+.B "pgrep -f controlcenter.py"
+and takes the first match.
+.PP
+The fallback matches on the script name only, so a second Control
+Center started from a different checkout, or an editor holding
+.I controlcenter.py
+in its command line, can be selected instead of the intended process.
+Prefer keeping the PID file intact.
+.SH OPTIONS
+None.  The script parses no arguments.
+.SH FILES
+.TP
+.I controlcenter.pid
+Written by
+.BR start-mu2edaq-controlcenter.sh (1);
+removed on every exit path that resolves a PID.
+.SH ENVIRONMENT
+None.  Unlike the start script this one does not consult
+.BR CRS_PORT_CMD ;
+it acts on the process, not the port.
+.SH EXIT STATUS
+.TP
+.B 0
+The process was stopped, was already gone, or was not running.  This
+script does not report a non-zero status for an already-stopped
+application, which is what makes it safe to run from a desktop icon.
+.SH EXAMPLES
+Stop a locally started instance:
+.PP
+.nf
+  ./stop-mu2edaq-controlcenter.sh
+.fi
+.PP
+Stop it through the control-room wrapper:
+.PP
+.nf
+  crs-app stop controlcenter
+.fi
+.SH SEE ALSO
+.BR controlcenter (1),
+.BR start-mu2edaq-controlcenter.sh (1),
+.BR crs-app (1),
+.BR mu2edaq-app (1)
+.SH AUTHOR
+Mu2e DAQ Group.
